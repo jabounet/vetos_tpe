@@ -54,7 +54,7 @@ begin
   inif.Free;
 end;
 
-
+// Conversion chr -> string
 function GetCmdStrByChr(c: char): string;
 begin
   Result := c;
@@ -70,6 +70,7 @@ begin
   end;
 end;
 
+//Affichage dans un memo
 procedure log(a: string);
 var
   i: integer;
@@ -83,23 +84,16 @@ begin
   form1.memo1.Lines.add(retchaineord);
 end;
 
-
+// Fonction d'envoi du montant (seconde version)
 function Envoi_v2(montant: double; port: string): boolean;
 var
   LRC: integer;
-  i, j: integer;
-  loop: integer;
+  j: integer;
   SEnvoiParam: string;
   sEnvoi: string;
-  ucCaractere: integer;
-  LigneCom1: boolean;
   SerialCB: TBlockserial;
   montantstr: string;
   RetChaine: string;
-  retchaineord: string;
-const
-  max_loop = 100;
-var
   canfollow: boolean;
 const
   A_OK = '0';
@@ -111,7 +105,6 @@ const
   A_ACK = chr(6);
   A_NAK = chr(15);
   A_SPC = chr(20);
-
 
   procedure sendStringandLog(a: string);
   begin
@@ -127,8 +120,6 @@ const
 
   function Envoi_donnees(Data: string; timeout: integer = 5000): boolean;
   var
-    k: integer;
-  var
     a, b: TdateTime;
     t_out: boolean;
     retchr: char;
@@ -137,9 +128,7 @@ const
     with SerialCB do
     begin
       SendStringandlog(Data);
-
       a := now;
-
       repeat
         b := now;
         sleep(50);
@@ -154,14 +143,12 @@ const
             A_EOT: canfollow := True;
             A_STX:
               case RetChaine[4] of
-              A_OK: Log('Transaction acceptée');
-              A_NOK: Log('Transaction annulée');
+                A_OK: Log('Transaction acceptée');
+                A_NOK: Log('Transaction annulée');
               end;
             A_NAK: Log('Refus du terminal');
           end;
-
         end;
-
         t_out := millisecondsbetween(a, b) >= timeout;
         if timeout = -1 then
           t_out := False;
@@ -193,20 +180,16 @@ begin
         ShowMessage('Communication avec le terminal CB impossible');
         exit;
       end;
-
       montantstr := (IntToStr(round(montant * 100)));
       if length(montantstr) < 8 then
         for j := 1 to 8 - (length(montantstr)) do
           montantstr := ('0') + montantstr;
-
       // CHAINE A ENVOYER
       sEnvoi := ('01') + montantstr + ('010978          ') + A_ETX;
-
       // CALCUL LRC
       LRC := 0;
       for j := 1 to length(sEnvoi) do
         LRC := LRC xor Ord(sEnvoi[j]);
-
       // PHASE 1 : COMMUNICATION AVEC LE TPE
       sEnvoiParam := A_ENQ;
       if not Envoi_donnees(sEnvoiParam, 2000) then
@@ -219,11 +202,11 @@ begin
       sEnvoiParam := A_EOT;
       if not Envoi_donnees(sEnvoiParam, -1) then
         exit;
+      Result := True;
     end
   finally
     SerialCB.Free;
   end;
-
 end;
 
 
